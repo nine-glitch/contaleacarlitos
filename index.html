@@ -1509,11 +1509,11 @@ Devolvé SOLO este JSON, sin texto extra, sin backticks:
 
     msgContent.push({ type: 'text', text: prompt });
 
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const res = await fetch("/api/proxy", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-6",
         max_tokens: 1000,
         messages: [{ role: "user", content: msgContent }]
       })
@@ -1754,9 +1754,9 @@ JSON:
 1 a 4 versiones. Solo JSON.`;
 
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const res = await fetch("/api/proxy", {
       method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:800, messages:[{role:"user",content:prompt}] })
+      body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:800, messages:[{role:"user",content:prompt}] })
     });
     const data = await res.json();
     const raw = data.content.map(i=>i.text||"").join("");
@@ -1803,9 +1803,9 @@ JSON: {"preguntas":[{"num":1,"texto":"..."},{"num":2,"texto":"..."},{"num":3,"te
 Solo JSON.`;
 
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const res = await fetch("/api/proxy", {
       method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:600, messages:[{role:"user",content:prompt}] })
+      body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:600, messages:[{role:"user",content:prompt}] })
     });
     const data = await res.json();
     const raw = data.content.map(i=>i.text||"").join("");
@@ -1925,9 +1925,9 @@ ${peopleInsightCtx}
 Solo el texto. Sin JSON, sin comillas, sin explicación.`;
 
   try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
+    const res = await fetch("/api/proxy", {
       method:"POST", headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ model:"claude-sonnet-4-20250514", max_tokens:200, messages:[{role:"user",content:prompt}] })
+      body: JSON.stringify({ model:"claude-sonnet-4-6", max_tokens:200, messages:[{role:"user",content:prompt}] })
     });
     const data = await res.json();
     const text = data.content.map(i=>i.text||"").join("").trim();
@@ -2190,11 +2190,11 @@ async function checkWorldAlert() {
     if (!major) return;
 
     // Generate Carlitos response to the news
-    const carlitosRes = await fetch("https://api.anthropic.com/v1/messages", {
+    const carlitosRes = await fetch("/api/proxy", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-6",
         max_tokens: 80,
         messages: [{
           role: "user",
