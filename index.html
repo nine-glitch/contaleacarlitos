@@ -1187,7 +1187,18 @@ textarea:focus { border-color:var(--gold2); }
       </div>
     </div>
 
-    <div class="sec-head">Entradas recientes</div>
+    <div class="sec-head">
+      Entradas recientes
+      <div style="margin-left:auto;position:relative;">
+        <button id="archive-menu-btn" onclick="toggleArchiveMenu()" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);background:none;border:none;cursor:pointer;padding:0 4px;letter-spacing:2px;transition:color 0.2s;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--text3)'">···</button>
+        <div id="archive-menu" style="display:none;position:absolute;top:20px;right:0;background:var(--card2);border:1px solid var(--border2);min-width:140px;z-index:9999;">
+          <button onclick="exportTXT();toggleArchiveMenu()" style="display:block;width:100%;padding:10px 16px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--text2);background:none;border:none;border-bottom:1px solid var(--border);cursor:pointer;text-align:left;text-transform:uppercase;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--text2)'">Exportar TXT</button>
+          <button onclick="exportJSON();toggleArchiveMenu()" style="display:block;width:100%;padding:10px 16px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--text2);background:none;border:none;border-bottom:1px solid var(--border);cursor:pointer;text-align:left;text-transform:uppercase;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--text2)'">Exportar JSON</button>
+          <button onclick="exportPDF();toggleArchiveMenu()" style="display:block;width:100%;padding:10px 16px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--text2);background:none;border:none;border-bottom:1px solid var(--border);cursor:pointer;text-align:left;text-transform:uppercase;" onmouseover="this.style.color='var(--gold)'" onmouseout="this.style.color='var(--text2)'">Exportar PDF</button>
+          <button onclick="confirmDeleteAll();toggleArchiveMenu()" style="display:block;width:100%;padding:10px 16px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:2px;color:#c06050;background:none;border:none;cursor:pointer;text-align:left;text-transform:uppercase;" onmouseover="this.style.color='#e08070'" onmouseout="this.style.color='#c06050'">Borrar archivo</button>
+        </div>
+      </div>
+    </div>
     <div id="recent-entries"></div>
 
     <div id="all-entries-wrap" style="display:none">
@@ -1306,10 +1317,6 @@ textarea:focus { border-color:var(--gold2); }
   <div class="footer-btns">
     <button class="footer-btn" id="install-btn" onclick="installApp()" style="display:none">⊞ Instalar app</button>
     <button class="footer-btn upgrade" onclick="showUpgrade()">✦ Activar Pro</button>
-    <button class="footer-btn" onclick="exportTXT()">TXT</button>
-    <button class="footer-btn" onclick="exportJSON()">JSON</button>
-    <button class="footer-btn" onclick="exportPDF()">PDF</button>
-    <button class="footer-btn danger" onclick="confirmDeleteAll()">Borrar archivo</button>
   </div>
 </footer>
 
@@ -2233,14 +2240,14 @@ function dismissWorldAlert() {
 }
 
 // ── EXPORT ────────────────────────────────────────────────────
-function toggleExportMenu() {
-  const m = document.getElementById('export-menu');
+function toggleArchiveMenu() {
+  const m = document.getElementById('archive-menu');
   m.style.display = m.style.display === 'none' ? 'block' : 'none';
 }
 
 document.addEventListener('click', e => {
-  if (!e.target.closest('#export-btn') && !e.target.closest('#export-menu')) {
-    const m = document.getElementById('export-menu');
+  if (!e.target.closest('#archive-menu-btn') && !e.target.closest('#archive-menu')) {
+    const m = document.getElementById('archive-menu');
     if (m) m.style.display = 'none';
   }
 });
