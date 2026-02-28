@@ -1169,22 +1169,19 @@ textarea:focus { border-color:var(--gold2); }
     </div>
 
     <div class="write-footer">
-      <span class="char-info"><span id="char-count">0</span> / 3000</span>
+      <span class="char-info" id="char-info" style="opacity:0;transition:opacity 0.3s;"><span id="char-count">0</span> / 3000</span>
       <div style="display:flex;gap:10px;align-items:center;">
         <button class="btn btn-outline" id="photo-trigger-btn" onclick="triggerPhotoUpgrade()" style="font-size:16px;padding:8px 14px;background:var(--card);border:1px solid var(--border2);">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b8965a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
         </button>
-        <button class="btn btn-gold" id="save-btn" onclick="saveEntry()">Atendé, Carlitos</button>
+        <button class="btn btn-gold" id="save-btn" onclick="saveEntry()" disabled style="opacity:0.4">Atendé, Carlitos</button>
       </div>
     </div>
 
     <div class="arch-box" id="arch-box">
       <div class="arch-label"><span class="pulse"></span>Carlitos</div>
       <div class="arch-text" id="arch-text"><div class="ldots"><span></span><span></span><span></span></div></div>
-      <div class="kofi-row" id="kofi-row">
-        <span class="kofi-note">Si Carlitos te voló la cabeza</span>
-        <a href="https://ko-fi.com/nineplus" target="_blank" class="kofi-link">☕ $5 →</a>
-      </div>
+
     </div>
 
     <div class="sec-head">
@@ -1343,7 +1340,16 @@ const dateShort = today.toLocaleDateString('es-AR', { day:'2-digit', month:'2-di
 document.getElementById('date-label').textContent = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
 
 const input = document.getElementById('entry-input');
-input.addEventListener('input', () => document.getElementById('char-count').textContent = input.value.length);
+input.addEventListener('input', () => {
+  const len = input.value.length;
+  document.getElementById('char-count').textContent = len;
+  const info = document.getElementById('char-info');
+  info.style.opacity = len >= 2800 ? '1' : '0';
+  if (len >= 2800) info.style.color = len >= 2950 ? 'var(--red)' : 'var(--text3)';
+  const btn = document.getElementById('save-btn');
+  btn.disabled = len < 20;
+  btn.style.opacity = len < 20 ? '0.4' : '1';
+});
 input.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') saveEntry(); });
 
 // ── PRO STATE ─────────────────────────────────────────────────
@@ -1590,6 +1596,9 @@ Devolvé SOLO este JSON, sin texto extra, sin backticks:
 
     input.value = "";
     document.getElementById('char-count').textContent = "0";
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  btn.style.opacity = '0.4';
     document.getElementById('photo-preview').innerHTML = "";
     pendingPhotos = [];
     pendingPhotoData = [];
