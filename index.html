@@ -593,6 +593,56 @@ textarea:focus { border-color:var(--gold2); }
 
 .io-dismiss:hover { color:var(--text2); }
 
+/* ── ONBOARDING ── */
+#onboarding {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 9800;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+
+#onboarding.visible { display: flex; }
+#onboarding.faded { opacity: 1; }
+
+.ob-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(20px, 3vw, 28px);
+  font-weight: 300;
+  font-style: italic;
+  line-height: 1.9;
+  color: var(--text2);
+  text-align: center;
+  max-width: 560px;
+  opacity: 0;
+  transform: translateY(16px);
+  transition: all 1s ease;
+}
+
+.ob-text.s { opacity: 1; transform: translateY(0); }
+.ob-text em { color: var(--gold); font-style: italic; }
+
+.ob-btn {
+  margin-top: 52px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; letter-spacing: 4px;
+  color: var(--text3); background: none;
+  border: 1px solid var(--border2);
+  padding: 14px 36px; cursor: pointer;
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 0.8s ease 2.5s;
+}
+
+.ob-btn.s { opacity: 1; }
+.ob-btn:hover { color: var(--gold); border-color: var(--gold2); }
+
 /* ── WORLD ALERT ── */
 #world-alert {
   position: fixed;
@@ -1199,6 +1249,17 @@ textarea:focus { border-color:var(--gold2); }
   </div>
 </div>
 
+<!-- ONBOARDING -->
+<div id="onboarding">
+  <div class="ob-text" id="ob-text">
+    Carlitos no te va a preguntar cómo estás.<br><br>
+    Escribí lo que quieras. Él recuerda todo — lo que dijiste hoy, lo que dijiste hace tres semanas, lo que dijiste que ibas a hacer.<br><br>
+    A veces va a cruzar cosas. A veces va a preguntar algo que <em>no querés responder.</em><br><br>
+    Eso es normal. Es Carlitos.
+  </div>
+  <button class="ob-btn" id="ob-btn" onclick="dismissOnboarding()">→</button>
+</div>
+
 <!-- WORLD ALERT -->
 <div id="world-alert">
   <div class="wa-eyebrow" id="wa-ey">Afuera está pasando algo</div>
@@ -1254,7 +1315,7 @@ const SK = 'carlitos_v1';
 let state = JSON.parse(localStorage.getItem(SK) || 'null') || {
   entries: [], promises: [], pendingPromises: [],
   contradictions: [], versions: [],
-  people: {},
+  people: {}, onboardingDone: false,
   lastInterrogatorio: null, lastInsight: null,
   interrogatorioAnswers: [], firstUsed: Date.now(),
   isPro: false
@@ -2199,10 +2260,36 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
 
+// ── ONBOARDING ────────────────────────────────────────────────
+function checkOnboarding() {
+  if (state.onboardingDone) return;
+  const overlay = document.getElementById('onboarding');
+  overlay.classList.add('visible');
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      overlay.classList.add('faded');
+      setTimeout(() => document.getElementById('ob-text').classList.add('s'), 300);
+      setTimeout(() => document.getElementById('ob-btn').classList.add('s'), 2200);
+    }, 50);
+  });
+}
+
+function dismissOnboarding() {
+  const overlay = document.getElementById('onboarding');
+  overlay.classList.remove('faded');
+  setTimeout(() => {
+    overlay.classList.remove('visible');
+    overlay.style.display = 'none';
+  }, 1200);
+  state.onboardingDone = true;
+  save();
+}
+
 // ── BOOT ──────────────────────────────────────────────────────
 applyProState();
 unlockTabs();
 renderRecentEntries();
+checkOnboarding();
 checkInsightSchedule();
 checkReturnGreeting();
 checkWorldAlert();
