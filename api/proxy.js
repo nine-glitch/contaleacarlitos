@@ -1,126 +1,127 @@
 // api/proxy.js — Vercel Edge Function
-// Protege la API key de Anthropic y agrega rate limiting por IP
+// Soporta Anthropic y OpenRouter — usa la key que esté configurada
 
 export const config = { runtime: 'edge' };
 
-// Rate limit: máximo de requests por IP por ventana de tiempo
-const RATE_LIMIT = 20;        // requests
-const WINDOW_MS = 60 * 60 * 1000; // 1 hora
-
-// In-memory store (se resetea por instancia — suficiente para limitar abuso masivo)
+const RATE_LIMIT = 20;
+const WINDOW_MS = 60 * 60 * 1000;
 const rateLimitStore = new Map();
 
-function getRateLimit(ip) {
+function getRateLimit(id) {
   const now = Date.now();
-  const entry = rateLimitStore.get(ip);
-
+  const entry = rateLimitStore.get(id);
   if (!entry || now - entry.windowStart > WINDOW_MS) {
-    rateLimitStore.set(ip, { count: 1, windowStart: now });
+    rateLimitStore.set(id, { count: 1, windowStart: now });
     return { allowed: true, remaining: RATE_LIMIT - 1 };
   }
-
-  if (entry.count >= RATE_LIMIT) {
-    return { allowed: false, remaining: 0 };
-  }
-
+  if (entry.count >= RATE_LIMIT) return { allowed: false, remaining: 0 };
   entry.count++;
   return { allowed: true, remaining: RATE_LIMIT - entry.count };
 }
 
 export default async function handler(req) {
-  // Solo POST
-  if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 });
-  }
-
-  // CORS — solo permitir tu dominio
   const origin = req.headers.get('origin') || '';
   const allowedOrigins = [
     'https://contaleacarlitos.vercel.app',
     'https://heycarlitos.app',
-    'http://localhost:3000', // para desarrollo local
+    'http://localhost:3000',
   ];
-
   const corsOrigin = allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
-
   const corsHeaders = {
     'Access-Control-Allow-Origin': corsOrigin,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, x-user-id',
   };
 
-  // Preflight
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204, headers: corsHeaders });
-  }
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders });
+  if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
 
-  // Rate limiting por user_id (desde header) o IP como fallback
   const userId = req.headers.get('x-user-id') || req.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
   const { allowed, remaining } = getRateLimit(userId);
-
   if (!allowed) {
     return new Response(
-      JSON.stringify({ error: 'Demasiadas requests. Esperá un rato antes de seguir.' }),
+      JSON.stringify({ error: 'Demasiadas requests. Esperá un rato.' }),
       { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 
-  // Leer body
   let body;
-  try {
-    body = await req.json();
-  } catch {
-    return new Response(
-      JSON.stringify({ error: 'Body inválido' }),
-      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+  try { body = await req.json(); }
+  catch {
+    return new Response(JSON.stringify({ error: 'Body inválido' }), { status: 400, headers: corsHeaders });
   }
 
-  // Validar que el modelo sea el correcto — no permitir que el cliente use modelos más caros
-  const allowedModels = ['claude-sonnet-4-6', 'claude-haiku-4-5-20251001'];
-  if (!allowedModels.includes(body.model)) {
-    body.model = 'claude-sonnet-4-6';
-  }
+  if (!body.max_tokens || body.max_tokens > 1500) body.max_tokens = 1000;
 
-  // Limitar max_tokens para evitar respuestas enormes
-  if (!body.max_tokens || body.max_tokens > 1500) {
-    body.max_tokens = 1000;
-  }
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  const openrouterKey = process.env.OPENROUTER_API_KEY;
 
-  // Llamar a Anthropic con la key del servidor
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
+  if (!anthropicKey && !openrouterKey) {
     return new Response(
       JSON.stringify({ error: 'API key no configurada' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 
+  let apiUrl, headers, requestBody;
+
+  if (anthropicKey) {
+    const allowedModels = ['claude-sonnet-4-6', 'claude-haiku-4-5-20251001'];
+    if (!allowedModels.includes(body.model)) body.model = 'claude-sonnet-4-6';
+    apiUrl = 'https://api.anthropic.com/v1/messages';
+    headers = {
+      'Content-Type': 'application/json',
+      'x-api-key': anthropicKey,
+      'anthropic-version': '2023-06-01',
+    };
+    requestBody = body;
+  } else {
+    apiUrl = 'https://openrouter.ai/api/v1/chat/completions';
+    headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${openrouterKey}`,
+      'HTTP-Referer': 'https://contaleacarlitos.vercel.app',
+      'X-Title': 'Contale a Carlitos',
+    };
+    // Convertir mensajes Anthropic → OpenAI
+    const msgs = (body.messages || []).map(m => ({
+      role: m.role,
+      content: Array.isArray(m.content)
+        ? m.content.filter(c => c.type === 'text').map(c => c.text).join('\n')
+        : m.content
+    }));
+    requestBody = {
+      model: 'anthropic/claude-sonnet-4-5',
+      max_tokens: body.max_tokens,
+      messages: msgs,
+    };
+  }
+
   try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch(apiUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify(body),
+      headers,
+      body: JSON.stringify(requestBody),
     });
 
     const data = await response.json();
 
-    return new Response(JSON.stringify(data), {
+    // Normalizar respuesta OpenRouter → formato Anthropic
+    let finalData = data;
+    if (!anthropicKey && data.choices?.[0]?.message?.content) {
+      finalData = {
+        content: [{ type: 'text', text: data.choices[0].message.content }]
+      };
+    }
+
+    return new Response(JSON.stringify(finalData), {
       status: response.status,
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json',
-        'X-RateLimit-Remaining': String(remaining),
-      },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-RateLimit-Remaining': String(remaining) },
     });
 
   } catch (err) {
     return new Response(
-      JSON.stringify({ error: 'Error conectando con Anthropic' }),
+      JSON.stringify({ error: 'Error conectando con la API' }),
       { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
