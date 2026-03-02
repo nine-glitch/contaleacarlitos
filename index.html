@@ -1550,6 +1550,10 @@ async function saveEntry() {
   const archBox = document.getElementById('arch-box');
   const archText = document.getElementById('arch-text');
   archBox.classList.add('visible');
+
+  // Delay mínimo antes de los dots — como que Carlitos termina lo que estaba haciendo
+  const thinkingDelay = 800 + Math.floor(Math.random() * 700); // 0.8s — 1.5s
+  await new Promise(r => setTimeout(r, thinkingDelay));
   archText.innerHTML = '<div class="ldots"><span></span><span></span><span></span></div>';
   
 
@@ -2762,6 +2766,7 @@ function showMusicPresence() {
   } else if (presencia.tipo === 'libro') {
     const libro = presencia.data;
     el.innerHTML = `
+      <div style="font-size:16px; flex-shrink:0; opacity:0.6;">📖</div>
       <div style="flex:1; min-width:0;">
         <div style="font-family:'Cormorant Garamond',serif; font-size:13px;
           font-style:italic; color:var(--text2); line-height:1.5;">
@@ -2774,8 +2779,11 @@ function showMusicPresence() {
       </div>
     `;
 
-    // Se opaca después de 2.5s — Carlitos sigue absorto
-    setTimeout(() => { el.style.opacity = '0.35'; }, 2500);
+    // Se disuelve muy lentamente — Carlitos sigue absorto
+    setTimeout(() => {
+      el.style.transition = 'opacity 3s ease';
+      el.style.opacity = '0.25';
+    }, 2500);
 
   } else {
     // Silencio — solo un punto
@@ -2790,11 +2798,12 @@ function showMusicPresence() {
   document.body.appendChild(el);
   requestAnimationFrame(() => { el.style.opacity = '1'; });
 
-  // Desaparece a los 6s
+  // Desaparece a los 7s — disolución lenta
   setTimeout(() => {
+    el.style.transition = 'opacity 2s ease';
     el.style.opacity = '0';
-    setTimeout(() => el.remove(), 600);
-  }, 6000);
+    setTimeout(() => el.remove(), 2100);
+  }, 7000);
 
   // Micro-feedback a los 3.2s
   setTimeout(() => {
