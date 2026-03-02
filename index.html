@@ -1726,7 +1726,7 @@ Devolvé SOLO este JSON, sin texto extra, sin backticks:
     unlockTabs();
     renderRecentEntries();
 
-    archText.innerHTML = formatText(parsed.archivista || "") + (parsed.hook ? `<div class="carlitos-hook">${parsed.hook}</div>` : '');
+    archText.innerHTML = formatText(parsed.archivista || "");
 
     // ── RESPUESTA VARIABLE ────────────────────────────────────
     // A veces responde completo, a veces micro-reacción, a veces silencio
@@ -2882,12 +2882,23 @@ const MENSAJES_CARLITOS = [
 ];
 
 function getMensajeConCancion() {
+  // 70% música, 30% libro — igual que la presencia visual
+  const esLibro = Math.random() < 0.30;
+
+  if (esLibro) {
+    const libro = LIBROS_AUTOAYUDA[Math.floor(Math.random() * LIBROS_AUTOAYUDA.length)];
+    return {
+      title: 'Carlitos',
+      body: `📖 ${libro.texto} ${libro.estado}`,
+      cancion: null
+    };
+  }
+
   const cancion = getCancionDelMomento();
-  // La notificación ES la canción — el mensaje es mínimo o nulo
   const formatos = [
-    `${cancion.titulo} · ${cancion.artista}`,
-    `${cancion.artista}, ${cancion.titulo}. Entrá cuando puedas.`,
-    `${cancion.titulo}. ${cancion.artista}.`,
+    `▌▌ ${cancion.titulo} · ${cancion.artista}`,
+    `▌▌ ${cancion.artista} — ${cancion.titulo}`,
+    `▌▌ ${cancion.titulo}. Entrá cuando puedas.`,
   ];
   return {
     title: 'Carlitos',
