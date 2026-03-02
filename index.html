@@ -2302,15 +2302,10 @@ function checkReturnGreeting() {
   let msg = '';
 
   if (hoursAway > 72) {
-    // Been away more than 3 days
     const days = Math.floor(hoursAway / 24);
-    msg = `Carlitos estuvo esperando ${days} días. La última vez que apareciste escribiste sobre <em>"${lastEntry.text.slice(0, 40)}..."</em>`;
-  } else if (lastHook) {
-    // Has a hook from last entry
-    msg = lastHook;
+    msg = `Carlitos estuvo esperando ${days} días. La última vez escribiste: <em>"${lastEntry.text.slice(0, 60)}..."</em>`;
   } else {
-    // Generic but specific return
-    msg = `¿Cómo terminó lo del <em>${lastEntry.dateShort}</em>?`;
+    msg = `La última vez escribiste: <em>"${lastEntry.text.slice(0, 60)}${lastEntry.text.length > 60 ? '...' : ''}"</em>`;
   }
 
   div.innerHTML = msg;
