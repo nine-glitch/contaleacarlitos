@@ -2289,7 +2289,7 @@ function dismissThought() {
 }
 
 // ── RETURN GREETING ───────────────────────────────────────────
-function checkReturnGreeting() {
+async function checkReturnGreeting() {
   if (!state.lastEntryTime || state.entries.length === 0) return;
   const hoursAway = (Date.now() - state.lastEntryTime) / (1000 * 60 * 60);
   if (hoursAway < 4) return;
@@ -2297,15 +2297,30 @@ function checkReturnGreeting() {
   const lastEntry = state.entries[state.entries.length - 1];
   const div = document.getElementById('return-greeting');
 
+  // Generar reacción con API — una línea, basada en el último post
   let msg = '';
-  if (hoursAway > 72) {
-    const days = Math.floor(hoursAway / 24);
-    msg = `Carlitos estuvo esperando ${days} días. La última vez escribiste: <em>"${lastEntry.text.slice(0, 60)}..."</em>`;
-  } else {
-    msg = `La última vez escribiste: <em>"${lastEntry.text.slice(0, 60)}${lastEntry.text.length > 60 ? '...' : ''}"</em>`;
-  }
+  try {
+    const res = await fetch('/api/proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...getApiHeaders() },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 60,
+        messages: [{
+          role: 'user',
+          content: `Sos Carlitos. Alguien vuelve a la app después de ${Math.floor(hoursAway)} horas. Su último post fue: "${lastEntry.text.slice(0, 120)}".
 
-  // Aparece después de que termina la presencia musical — 8.5s
+Reaccioná en UNA línea. Puede ser una pregunta retórica irónica, una observación filosa, o simplemente reírte. Sin adornos, sin explicaciones, sin hablar de vos en tercera persona. Máximo 10 palabras. A veces la mejor reacción es "jajaja" o "mmm" o "uy." — no siempre tiene que ser profundo.`
+        }]
+      })
+    });
+    const data = await res.json();
+    msg = data.content?.[0]?.text?.trim() || '';
+  } catch(e) {}
+
+  if (!msg) return;
+
+  // Aparece después de la presencia musical — 8.5s
   setTimeout(() => {
     div.innerHTML = msg;
     div.style.display = 'block';
@@ -2315,7 +2330,6 @@ function checkReturnGreeting() {
       setTimeout(() => { div.style.opacity = '1'; }, 50);
     });
 
-    // Se va a los 6 segundos
     setTimeout(() => {
       div.style.transition = 'opacity 1s ease';
       div.style.opacity = '0';
@@ -2879,6 +2893,15 @@ const MENSAJES_CARLITOS = [
   "Hay algo que cambia cada vez que lo contás.",
   "Estuve pensando. Vení cuando quieras.",
   "Tres veces esta semana mencionaste lo mismo.",
+  // Risas y reacciones sueltas — sin contexto
+  "jajaja",
+  "no, pará.",
+  "uy.",
+  "ah, bueno.",
+  "mmm.",
+  "igual.",
+  "interesante.",
+  "ah.",
 ];
 
 function getMensajeConCancion() {
